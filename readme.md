@@ -1,0 +1,1 @@
+Run the exe file given and apply filter according to the ui and it is easy to use
