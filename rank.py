@@ -16,10 +16,11 @@ class ApplicantFilterApp:
         control_frame = tk.Frame(root)
         control_frame.pack(pady=5)
 
-        tk.Label(control_frame, text="Select Preference (p1–p9):").grid(row=0, column=0, padx=5)
-        self.pref_choice = ttk.Combobox(control_frame, values=[f"p{i}" for i in range(1, 10)], state="readonly")
-        self.pref_choice.grid(row=0, column=1, padx=5)
-        self.pref_choice.current(0)
+        tk.Label(control_frame, text="Select Preference(s) (p1–p9):").grid(row=0, column=0, padx=5)
+        self.pref_listbox = tk.Listbox(control_frame, selectmode=tk.MULTIPLE, height=9, width=10)
+        for i in range(1, 10):
+            self.pref_listbox.insert(tk.END, f"p{i}")
+        self.pref_listbox.grid(row=0, column=1, padx=5)
 
         tk.Label(control_frame, text="Value(s):").grid(row=0, column=2, padx=5)
         self.value_entry = tk.Entry(control_frame, width=15)
@@ -40,8 +41,8 @@ class ApplicantFilterApp:
         # Results table with S.N column
         self.tree = ttk.Treeview(
             root,
-            columns=("S.N","Rank", "Applicant Name", "Gender", "District",
-                     "p1","p2","p3","p4","p5","p6","p7","p8","p9"),
+            columns=("S.N", "Rank", "Applicant Name", "Gender", "District",
+                     "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9"),
             show="headings"
         )
         for col in self.tree["columns"]:
@@ -89,7 +90,7 @@ class ApplicantFilterApp:
         df = pd.DataFrame(all_data[1:], columns=all_data[0])
 
         # Try converting numeric columns
-        for col in ["Rank","p1","p2","p3","p4","p5","p6","p7","p8","p9"]:
+        for col in ["Rank", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9"]:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
         return df
@@ -114,9 +115,18 @@ class ApplicantFilterApp:
                 conditions |= self.df[col].isin(values)
             self.filtered = self.df[conditions].sort_values(by="Rank")
         else:
-            # Search only in selected preference
-            pref = self.pref_choice.get()
-            self.filtered = self.df[self.df[pref].isin(values)].sort_values(by="Rank")
+            # Get selected preferences
+            selected_prefs = [self.pref_listbox.get(idx) for idx in self.pref_listbox.curselection()]
+            if not selected_prefs:
+                messagebox.showwarning("Warning", "Please select at least one preference.")
+                return
+
+            # Search in selected preferences
+            conditions = False
+            for pref in selected_prefs:
+                if pref in self.df.columns:
+                    conditions |= self.df[pref].isin(values)
+            self.filtered = self.df[conditions].sort_values(by="Rank")
 
         # Clear old data
         for row in self.tree.get_children():
